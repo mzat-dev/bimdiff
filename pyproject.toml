@@ -1,0 +1,57 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "bimdiff"
+version = "0.2.2"
+description = "Semantic diff engine for IFC/BIM models"
+license = {text = "AGPL-3.0-only"}
+requires-python = ">=3.10"
+readme = "README.md"
+keywords = ["ifc", "bim", "diff", "ifcopenshell", "building-information-modeling"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "License :: OSI Approved :: GNU Affero General Public License v3",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering",
+    "Topic :: Software Development :: Libraries :: Python Modules",
+    "Operating System :: OS Independent",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Science/Research",
+]
+dependencies = [
+    "ifcopenshell>=0.8,<0.9",
+    "pydantic>=2.0",
+    "click",
+    "jinja2",
+    "numpy",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-cov",
+    "ruff",
+    "reuse",
+]
+
+[project.scripts]
+bimdiff = "bimdiff.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/mzat-dev/bimdiff"
+"Commercial License" = "https://bimdiff.net/license"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/bimdiff"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

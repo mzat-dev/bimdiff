@@ -1,0 +1,158 @@
+{#
+bimdiff - Semantic diff engine for IFC/BIM models
+Copyright (C) 2026 BIM Diff contributors
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Affero General Public License as published by
+the Free Software Foundation, version 3.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+GNU Affero General Public License for more details.
+
+You should have received a copy of the GNU Affero General Public License
+along with this program. If not, see <https://www.gnu.org/licenses/>.
+
+SPDX-FileCopyrightText: 2026 BIM Diff contributors
+SPDX-License-Identifier: AGPL-3.0-only
+#}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BIM Diff Report</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: Inter, -apple-system, sans-serif; font-size: 14px; color: #333; background: #fafafa; padding: 24px; }
+  h1 { font-size: 22px; font-weight: 600; margin-bottom: 8px; }
+  .subtitle { color: #666; margin-bottom: 24px; }
+  .summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 24px; }
+  .summary-card { padding: 16px; border-radius: 8px; text-align: center; }
+  .summary-card .count { font-size: 28px; font-weight: 700; }
+  .summary-card .label { font-size: 12px; text-transform: uppercase; margin-top: 4px; }
+  .card-added { background: #E8F5E9; color: #2E7D32; }
+  .card-removed { background: #FFEBEE; color: #C62828; }
+  .card-modified { background: #FFF3E0; color: #E65100; }
+  .card-severity { background: #F5F5F5; color: #616161; }
+  .severity-low { color: #2E7D32; }
+  .severity-medium { color: #E65100; }
+  .severity-high { color: #C62828; }
+  .impact { color: #666; margin-bottom: 24px; font-size: 13px; }
+  table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; overflow: hidden; border: 1px solid #e5e5e5; }
+  th { background: #f9f9f9; text-align: left; padding: 10px 12px; font-weight: 600; font-size: 12px; text-transform: uppercase; color: #666; border-bottom: 1px solid #e5e5e5; cursor: pointer; }
+  td { padding: 10px 12px; border-bottom: 1px solid #f0f0f0; }
+  tr:hover { background: #f9f9f9; }
+  .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; text-transform: uppercase; }
+  .badge-added { background: #E8F5E9; color: #2E7D32; }
+  .badge-removed { background: #FFEBEE; color: #C62828; }
+  .badge-modified { background: #FFF3E0; color: #E65100; }
+  .footer { margin-top: 24px; color: #999; font-size: 12px; text-align: center; }
+  .change-detail { font-size: 12px; color: #666; }
+  .old-val { text-decoration: line-through; color: #C62828; }
+  .new-val { color: #2E7D32; }
+</style>
+</head>
+<body>
+<h1>BIM Diff Report</h1>
+<p class="subtitle">{{ summary.total_added + summary.total_removed + summary.total_modified + summary.total_unchanged }} elements compared</p>
+
+<div class="summary-grid">
+  <div class="summary-card card-added">
+    <div class="count">+{{ summary.total_added }}</div>
+    <div class="label">Added</div>
+  </div>
+  <div class="summary-card card-removed">
+    <div class="count">-{{ summary.total_removed }}</div>
+    <div class="label">Removed</div>
+  </div>
+  <div class="summary-card card-modified">
+    <div class="count">~{{ summary.total_modified }}</div>
+    <div class="label">Modified</div>
+  </div>
+  <div class="summary-card card-severity">
+    <div class="count severity-{{ summary.severity }}">{{ summary.severity | upper }}</div>
+    <div class="label">Severity</div>
+  </div>
+</div>
+
+{% if summary.most_impacted_types or summary.most_impacted_storeys %}
+<p class="impact">
+  {% if summary.most_impacted_types %}Most impacted types: {{ summary.most_impacted_types | join(', ') }}.{% endif %}
+  {% if summary.most_impacted_storeys %} Most impacted floors: {{ summary.most_impacted_storeys | join(', ') }}.{% endif %}
+</p>
+{% endif %}
+
+<table>
+<thead>
+  <tr>
+    <th style="width:80px">Status</th>
+    <th style="width:120px">Type</th>
+    <th>Name</th>
+    <th style="width:200px">GlobalId</th>
+    <th>Changes</th>
+  </tr>
+</thead>
+<tbody>
+{% for entity in result.added %}
+  <tr>
+    <td><span class="badge badge-added">+ added</span></td>
+    <td>{{ entity.ifc_type }}</td>
+    <td>{{ entity.name or '—' }}</td>
+    <td style="font-family:monospace;font-size:11px">{{ entity.global_id }}</td>
+    <td>—</td>
+  </tr>
+{% endfor %}
+{% for entity in result.modified %}
+  <tr>
+    <td><span class="badge badge-modified">~ modified</span></td>
+    <td>{{ entity.ifc_type }}</td>
+    <td>{{ entity.name or '—' }}</td>
+    <td style="font-family:monospace;font-size:11px">{{ entity.global_id }}</td>
+    <td>
+      {% for change in entity.changes %}
+      <div class="change-detail">
+        <strong>{{ change.field }}</strong>:
+        <span class="old-val">{{ change.old_value }}</span> &rarr;
+        <span class="new-val">{{ change.new_value }}</span>
+      </div>
+      {% endfor %}
+    </td>
+  </tr>
+{% endfor %}
+{% for entity in result.removed %}
+  <tr>
+    <td><span class="badge badge-removed">- removed</span></td>
+    <td>{{ entity.ifc_type }}</td>
+    <td>{{ entity.name or '—' }}</td>
+    <td style="font-family:monospace;font-size:11px">{{ entity.global_id }}</td>
+    <td>—</td>
+  </tr>
+{% endfor %}
+</tbody>
+</table>
+
+<p class="footer">Generated by BIM Diff v{{ version }}</p>
+
+<script>
+document.querySelectorAll('th').forEach(th => {
+  th.addEventListener('click', () => {
+    const table = th.closest('table');
+    const tbody = table.querySelector('tbody');
+    const rows = Array.from(tbody.rows);
+    const idx = Array.from(th.parentNode.children).indexOf(th);
+    const asc = th.dataset.sort !== 'asc';
+    th.dataset.sort = asc ? 'asc' : 'desc';
+    rows.sort((a, b) => {
+      const av = a.cells[idx].textContent.trim();
+      const bv = b.cells[idx].textContent.trim();
+      return asc ? av.localeCompare(bv) : bv.localeCompare(av);
+    });
+    rows.forEach(r => tbody.appendChild(r));
+  });
+});
+</script>
+</body>
+</html>
